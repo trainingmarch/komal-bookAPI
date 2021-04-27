@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd ">
+    <http:listener-config name="book-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="book-api-config" api="resource::40d9ee14-ac0a-47cc-8e7c-9843454cd8d2:book-api:1.0.0:raml:zip:book-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="book-api-main">
+        <http:listener config-ref="book-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="book-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="book-api-console">
+        <http:listener config-ref="book-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="book-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\books\authors:book-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  authors: [
+    {
+      id: "1000007",
+      name: "John Irving",
+      biography: "John Irving was born in Exeter, New Hampshire, on March 3, 1942, and he once admitted that he was a 'grim' child.",
+      image: "http://s.s-bol.com/imgbase0//imagebase/regular/FC/8/0/4/0/260408.jpg"
+    }, 
+    {
+      id: "1000008",
+      name: "Khaled Hosseini",
+      biography: "Khaled Hosseini was born in Kabul, Afghanistan, in 1965. His father was a diplomat with the Afghan Foreign Ministry and his mother taught Farsi and History at a large high school in Kabul.",
+      image: "http://s.s-bol.com/imgbase0//imagebase/regular/FC/6/0/0/4/1504006.jpg"
+    }, 
+    {
+      id: "1000009",
+      name: "Nicholas Sparks",
+      biography: "Nicholas Charles Sparks was born in Omaha, Nebraska, on December 31, 1965, the second son of Patrick Michael and Jill Emma Marie Sparks.",
+      image: "http://s.s-bol.com/imgbase0//imagebase/regular/FC/2/7/6/9/839672.jpg"
+    }, 
+    {
+      id: "1000001",
+      name: "Linda van Rijn",
+      biography: "Linda van Rijn (1974, Harmelen) is na haar studie Literatuurwetenschappen in de reisbranche gaan werken.",
+      image: "http://s.s-bol.com/imgbase0//imagebase/regular/FC/3/9/5/3/4193593.jpg"
+    }, 
+    {
+      id: "1000002",
+      name: "Terry Brooks",
+      biography: "Terry Brooks (8 januari 1944, Sterling (Illinois)) is een Amerikaans schrijver van epische fantasy.",
+      image: "http://2.bp.blogspot.com/-Sd0btC31U58/T0uFQR-ajcI/AAAAAAAAACg/YBEFGGQO9uA/s200/TerryBrooks_A_plus.jpg"
+    }, 
+    {
+      id: "1000003",
+      name: "David Baldacci",
+      biography: "David Baldacci (1960) werd geboren in Virginia in de Verenigde Staten. Na zijn studies politieke wetenschappen en rechten werkte hij negen jaar lang als advocaat in Washington D.C.",
+      image: "http://s.s-bol.com/imgbase0//imagebase/regular/FC/4/1/8/6/6814.jpg"
+    }, 
+    {
+      id: "1000005",
+      name: "Sophie Kinsella",
+      biography: "Sophie Kinsella ex-financieel journaliste en schrijfster van de Shopaholic-reeks. Sophie Kinsella woont in Surrey, Engeland samen met haar man en vier zoons. ",
+      image: "http://s.s-bol.com/imgbase0/PARTYIMAGE/FC/6/6/9/1/1/66911.gif"
+    }, 
+    {
+      id: "1000006",
+      name: "Maeve Binchy",
+      biography: "Maeve Binchy was born on 28 May 1940 in Dublin and raised in Dalkey. The eldest child of a lawyer and a nurse, Maeve received her education at the Holy Child Convent in nearby Killiney.",
+      image: "http://s.s-bol.com/imgbase0//imagebase/regular/FC/5/3/4/5/305435.jpg"
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="d6884d97-ca8b-44ee-ad7a-381f0ee4583c" message="GET All Author Details"/>
+    </flow>
+    <flow name="get:\books:book-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Books: [
+    {
+      id: 101,
+      title: "Northanger Abbey",
+      author: "Austen, Jane",
+      year_written: 1814,
+      edition: "Penguin",
+      price: 18.2
+    }, 
+    {
+      id: 102,
+      title: "War and Peace",
+      author: "Tolstoy, Leo",
+      year_written: 1865,
+      edition: "Penguin",
+      price: 12.7
+    }, 
+    {
+      id: 103,
+      title: "Anna Karenina",
+      author: "Tolstoy, Leo",
+      year_written: 1875,
+      edition: "Penguin",
+      price: 13.5
+    }, 
+    {
+      id: 104,
+      title: "Mrs. Dalloway",
+      author: "Woolf, Virginia",
+      year_written: 1925,
+      edition: "Harcourt Brace",
+      price: 25
+    }, 
+    {
+      id: 105,
+      title: "The Hours",
+      author: "Cunnningham, Michael",
+      year_written: 1999,
+      edition: "Harcourt Brace",
+      price: 12.35
+    }, 
+    {
+      id: 106,
+      title: "Huckleberry Finn",
+      author: "Twain, Mark",
+      year_written: 1865,
+      edition: "Penguin",
+      price: 5.76
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="6a80d4a4-3631-437c-b2fa-a50063439e7e" message="GET All Book Details"/>
+    </flow>
+    <flow name="get:\books\authors\(authorID):book-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="authorID">attributes.uriParams.'authorID'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "1000004",
+  name: "Dan Brown",
+  biography: "Dan Brown is een Amerikaanse schrijver van thrillers. Tot Brown besloot zich volledig op het schrijven te storten, doceerde hij Engels aan de Philips Exeter Academy.",
+  image: "http://s.s-bol.com/imgbase0/PARTYIMAGE/FC/1/5/6/6/0/1566097.gif"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="5fc309c3-7459-41b2-aa12-ee2c2e348b10" message="POST Specific Author detail by authorID"/>
+    </flow>
+    <flow name="get:\books\(bookID):book-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="bookID">attributes.uriParams.'bookID'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  title: "War and Peace",
+  author: "Tolstoy, Leo",
+  year_written: 1865,
+  edition: "Penguin",
+  price: 12.7
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="b8f2231f-3aed-40d4-9c29-15741cf7454e" message="POST specific Book detail by BookID"/>
+    </flow>
+    <flow name="post:\books\authors:application\json:book-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Author created successful"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<set-payload value='#[%dw 2.0
+ output application/json
+ ---
+{
+	"Message": "Author data inserted successful"
+}]' doc:name="Set Payload" doc:id="afe3d9b7-230a-4844-87ad-328d2efd37a4" />
+		<logger level="INFO" doc:name="Logger" doc:id="2a510478-7e40-4cae-a3f2-fd311e22adae" message="#[payload]"/>
+    </flow>
+    <flow name="post:\books:application\json:book-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Book created successful"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<set-payload value='#[%dw 2.0
+ output application/json
+ ---
+{
+	"Message": "Book data inserted successful"
+}]' doc:name="Set Payload" doc:id="ac4e1a72-ec12-4c79-9704-48410d613393" />
+		<logger level="INFO" doc:name="Logger" doc:id="e5c3fba0-2fe4-4d39-8d16-e86687f5f06e" message="#[payload]"/>
+    </flow>
+</mule>
